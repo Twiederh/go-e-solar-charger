@@ -1,0 +1,15 @@
+version: "3" 
+services: 
+  pwplugin: 
+    image: twiederh/go-e-solar-charger:latest 
+    restart: always 
+    environment: 
+      - GoE=192.168.7.66 
+      - pwPlugin = 192.168.1.120:8081 
+      - Intervall = 10 
+      - TZ=Europe/Berlin 
+    logging: 
+      driver: "json-file" 
+    options: 
+      max-file: "5" 
+      max-size: "10m"
