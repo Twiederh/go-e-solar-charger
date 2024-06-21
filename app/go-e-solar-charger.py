@@ -33,7 +33,7 @@ def get_environ(var: str) -> str:
 
 GoE = get_environ("GoE")
 pwPlugin = get_environ("pwPlugin")
-intervall = get_environ("Intervall")
+intervall = 5
 TZ = get_environ("TZ")
 
 TIMEOUT = 10
