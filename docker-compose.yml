@@ -1,4 +1,5 @@
 version: "3" 
+
 services: 
   go-e-solar-charger: 
     image: twiederh/go-e-solar-charger:latest 
