@@ -1,6 +1,6 @@
 version: "3" 
 services: 
-  pwplugin: 
+  go-e-solar-charger: 
     image: twiederh/go-e-solar-charger:latest 
     restart: always 
     environment: 
