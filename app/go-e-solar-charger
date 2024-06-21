@@ -31,13 +31,10 @@ def get_environ(var: str) -> str:
 
     return val
 
-# GoE = get_environ("GoE")
-# pwPlugin = get_environ("pwPlugin")
-GoE = "192.168.7.66"
-pwPlugin = "192.168.1.120:8081"
+GoE = get_environ("GoE")
+pwPlugin = get_environ("pwPlugin")
 intervall = get_environ("Intervall")
-#TZ = get_environ("TZ")
-TZ = "Europe/Berlin"
+TZ = get_environ("TZ")
 
 TIMEOUT = 10
 
