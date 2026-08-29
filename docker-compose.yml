@@ -1,16 +1,22 @@
-version: "3" 
+version: "3"
 
-services: 
-  go_e_solar_charger: 
-    image: twiederh/go-e-solar-charger:latest 
-    restart: always 
-    environment: 
-      - GoE=192.168.7.66 
-      - pwPlugin = 192.168.1.120:8081 
-      - Intervall = 10 
-      - TZ=Europe/Berlin 
-    logging: 
-      driver: "json-file" 
-      options: 
-        max-file: "5" 
+services:
+  go_e_solar_charger:
+    image: twiederh/go-e-solar-charger:latest
+    restart: always
+    ports:
+      - "8090:80"
+    environment:
+      # Only used to pre-fill the go-e host and timezone the first time the
+      # container starts. Powerwall access, go-e API key and everything
+      # else is set on the /config page and persisted in ./data - env vars
+      # are ignored once data/config.json exists.
+      - GoE=192.168.7.66
+      - TZ=Europe/Berlin
+    volumes:
+      - ./data:/code/data
+    logging:
+      driver: "json-file"
+      options:
+        max-file: "5"
         max-size: "10m"

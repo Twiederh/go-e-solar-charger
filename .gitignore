@@ -8,3 +8,7 @@ __pycache__/
 *.pyc
 .venv/
 venv/
+
+# Persisted dashboard config (Powerwall password, go-e API key) - never commit this
+/data/
+*.json.tmp

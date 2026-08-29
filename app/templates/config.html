@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% block title %}Konfiguration - go-e-solar-charger{% endblock %}
+{% block content %}
+  <h1>Konfiguration</h1>
+
+  {% if saved %}
+    <p class="banner banner-success">Gespeichert.</p>
+  {% endif %}
+
+  <form id="config-form" method="post" action="/config">
+    <fieldset>
+      <legend>Tesla Powerwall Gateway</legend>
+
+      <label for="powerwall_host">IP-Adresse / Host</label>
+      <input type="text" id="powerwall_host" name="powerwall_host" value="{{ cfg.powerwall_host }}" placeholder="z.B. 192.168.1.100" required>
+
+      <label for="powerwall_email">E-Mail (Gateway-Login)</label>
+      <input type="email" id="powerwall_email" name="powerwall_email" value="{{ cfg.powerwall_email }}">
+
+      <label for="powerwall_password">
+        Passwort
+        {% if cfg.powerwall_password_set %}<span class="hint">(leer lassen, um das gespeicherte Passwort zu behalten)</span>{% endif %}
+      </label>
+      <input type="password" id="powerwall_password" name="powerwall_password" autocomplete="off" placeholder="{{ '••••••••' if cfg.powerwall_password_set else '' }}">
+    </fieldset>
+
+    <fieldset>
+      <legend>go-e Charger</legend>
+
+      <label for="goe_host">IP-Adresse / Host</label>
+      <input type="text" id="goe_host" name="goe_host" value="{{ cfg.goe_host }}" placeholder="z.B. 192.168.7.66">
+
+      <label for="goe_api_key">
+        API-Key
+        <span class="hint">(nur falls in deiner go-e-Firmware ein lokaler API-Key aktiviert ist{{ ', leer lassen um den gespeicherten zu behalten' if cfg.goe_api_key_set else '' }})</span>
+      </label>
+      <input type="password" id="goe_api_key" name="goe_api_key" autocomplete="off" placeholder="{{ '••••••••' if cfg.goe_api_key_set else '' }}">
+    </fieldset>
+
+    <fieldset>
+      <legend>Allgemein</legend>
+
+      <label for="poll_interval_seconds">Abfrage-Intervall (Sekunden)</label>
+      <input type="number" id="poll_interval_seconds" name="poll_interval_seconds" min="2" value="{{ cfg.poll_interval_seconds }}">
+
+      <label for="timezone">Zeitzone</label>
+      <input type="text" id="timezone" name="timezone" value="{{ cfg.timezone }}">
+    </fieldset>
+
+    <div class="actions">
+      <button type="button" id="test-btn">Verbindung testen</button>
+      <button type="submit">Speichern</button>
+    </div>
+  </form>
+
+  <div id="test-result"></div>
+
+  <script>
+    document.getElementById("test-btn").addEventListener("click", async () => {
+      const form = document.getElementById("config-form");
+      const data = new FormData(form);
+      const resultBox = document.getElementById("test-result");
+      resultBox.textContent = "Teste Verbindung ...";
+
+      try {
+        const response = await fetch("/config/test", { method: "POST", body: data });
+        const result = await response.json();
+        const lines = [];
+
+        if (result.powerwall) {
+          lines.push(result.powerwall.ok
+            ? "Powerwall: OK - " + JSON.stringify(result.powerwall.detail)
+            : "Powerwall: Fehler - " + result.powerwall.detail);
+        }
+        if (result.goe) {
+          lines.push(result.goe.ok
+            ? "go-e: OK - " + JSON.stringify(result.goe.detail)
+            : "go-e: Fehler - " + result.goe.detail);
+        }
+        if (lines.length === 0) {
+          lines.push("Bitte mindestens eine IP-Adresse eintragen.");
+        }
+        resultBox.innerHTML = lines.map(l => "<p>" + l + "</p>").join("");
+      } catch (err) {
+        resultBox.textContent = "Test fehlgeschlagen: " + err;
+      }
+    });
+  </script>
+{% endblock %}

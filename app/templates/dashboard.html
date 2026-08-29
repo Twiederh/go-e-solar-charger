@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+{% block title %}Dashboard - go-e-solar-charger{% endblock %}
+{% block content %}
+  <div id="error-banner" class="banner banner-error" hidden></div>
+
+  <section class="card-grid">
+    <article class="card" id="card-solar">
+      <h2>Solar</h2>
+      <p class="value"><span data-field="solar_w">&ndash;</span><span class="unit">W</span></p>
+      <p class="hint">Produktion</p>
+    </article>
+
+    <article class="card" id="card-grid">
+      <h2>Netz</h2>
+      <p class="value"><span data-field="grid_w">&ndash;</span><span class="unit">W</span></p>
+      <p class="hint" data-field="grid_hint">Bezug positiv, Einspeisung negativ</p>
+    </article>
+
+    <article class="card" id="card-battery">
+      <h2>Batterie</h2>
+      <p class="value"><span data-field="battery_w">&ndash;</span><span class="unit">W</span></p>
+      <p class="hint" data-field="battery_hint">Entladen positiv, Laden negativ</p>
+      <p class="soc" data-field="soe_percent_text"></p>
+    </article>
+
+    <article class="card" id="card-load">
+      <h2>Haus</h2>
+      <p class="value"><span data-field="load_w">&ndash;</span><span class="unit">W</span></p>
+      <p class="hint">Verbrauch</p>
+    </article>
+  </section>
+
+  <section class="card-grid">
+    <article class="card card-wide" id="card-goe">
+      <h2>go-e Charger</h2>
+      <p><span class="badge" id="goe-status-badge" data-field="car_text">unbekannt</span></p>
+      <dl class="kv">
+        <dt>Ladeleistung</dt><dd><span data-field="power_w">&ndash;</span> W</dd>
+        <dt>Erlaubter Strom</dt><dd><span data-field="allowed_current_a">&ndash;</span> A</dd>
+        <dt>Angeforderter Strom</dt><dd><span data-field="requested_current_a">&ndash;</span> A</dd>
+        <dt>Energie (Ladevorgang)</dt><dd><span data-field="energy_session_wh">&ndash;</span> Wh</dd>
+        <dt data-field="goe_error_row" hidden>Fehler</dt><dd data-field="goe_error_text"></dd>
+      </dl>
+    </article>
+  </section>
+
+  <p class="last-update">Letzte erfolgreiche Aktualisierung: <span id="last-success">{{ state.last_success or "noch keine" }}</span></p>
+
+  <script>
+    const CAR_BADGE_CLASS = {
+      0: "badge-gray", 1: "badge-gray", 2: "badge-green",
+      3: "badge-yellow", 4: "badge-blue", 5: "badge-red",
+    };
+
+    function fmt(value, digits) {
+      if (value === null || value === undefined) return "–";
+      return Number(value).toFixed(digits === undefined ? 0 : digits);
+    }
+
+    function render(state) {
+      const errorBanner = document.getElementById("error-banner");
+      if (state.error) {
+        errorBanner.textContent = "Verbindungsproblem: " + state.error;
+        errorBanner.hidden = false;
+      } else {
+        errorBanner.hidden = true;
+      }
+
+      const pw = state.powerwall || {};
+      document.querySelector('[data-field="solar_w"]').textContent = fmt(pw.solar_w);
+      document.querySelector('[data-field="grid_w"]').textContent = fmt(pw.grid_w);
+      document.querySelector('[data-field="battery_w"]').textContent = fmt(pw.battery_w);
+      document.querySelector('[data-field="load_w"]').textContent = fmt(pw.load_w);
+      const soc = document.querySelector('[data-field="soe_percent_text"]');
+      soc.textContent = (pw.soe_percent === null || pw.soe_percent === undefined)
+        ? "" : "Ladezustand: " + fmt(pw.soe_percent, 1) + " %";
+
+      const goe = state.goe;
+      const badge = document.getElementById("goe-status-badge");
+      if (goe) {
+        badge.textContent = goe.car_text;
+        badge.className = "badge " + (CAR_BADGE_CLASS[goe.car_code] || "badge-gray");
+        document.querySelector('[data-field="power_w"]').textContent = fmt(goe.power_w);
+        document.querySelector('[data-field="allowed_current_a"]').textContent = fmt(goe.allowed_current_a);
+        document.querySelector('[data-field="requested_current_a"]').textContent = fmt(goe.requested_current_a);
+        document.querySelector('[data-field="energy_session_wh"]').textContent = fmt(goe.energy_session_wh);
+        const errRow = document.querySelector('[data-field="goe_error_row"]');
+        const errText = document.querySelector('[data-field="goe_error_text"]');
+        if (goe.error_text) {
+          errRow.hidden = false;
+          errText.textContent = goe.error_text;
+        } else {
+          errRow.hidden = true;
+          errText.textContent = "";
+        }
+      } else {
+        badge.textContent = "nicht konfiguriert";
+        badge.className = "badge badge-gray";
+      }
+
+      if (state.last_success) {
+        document.getElementById("last-success").textContent = state.last_success;
+      }
+    }
+
+    async function refresh() {
+      try {
+        const response = await fetch("/api/data");
+        const state = await response.json();
+        render(state);
+      } catch (err) {
+        // Dashboard itself is unreachable (e.g. server restarting) - leave
+        // the last known values on screen rather than clearing them.
+        console.warn("Konnte /api/data nicht laden", err);
+      }
+    }
+
+    refresh();
+    setInterval(refresh, 5000);
+  </script>
+{% endblock %}
